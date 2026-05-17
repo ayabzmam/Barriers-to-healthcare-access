@@ -1,0 +1,47 @@
+# Feature Selection Using R comand
+
+A=read.csv(file.choose(),header = T)
+A$imputed_output<-factor(A$imputed_output)
+levels(A$barrier)<-c("No barrier","barrier")
+prop.table(table(A$barrier))
+View(A)
+library(plyr)
+A$barrier<-revalue(A$barrier,c("No"=0,"Yes"=1))
+A$barrier<-factor(ifelse(A$barrier==0,"No","Yes"))
+prop.table(table(A$barrier))
+A$barrier<-revalue(A$barrier,c("Yes"=1,"No"=0))
+prop.table(table(A$barrier))
+View(D)
+library(caret)
+library(ggplot2)
+library(mlbench)
+library(Boruta)
+library(randomForest)
+set.seed(333)
+boru<-Boruta(barrier~.,data=A,doTrace=2)
+print(boru)
+plot(boru)
+plot(boru,las=3,cex.axis=0.8)
+rf<-train(barrier~.,data=A,method="rf")
+rf
+varImprf<-varImp(rf)
+plot(varImprf,main="Variable importancefor Healtcare Barrier Prediction in East Africa (randomForest)")
+#data partition
+# define an 80%/20% train/test split of the dataset
+set.seed(1)
+split=0.80
+indsti <- createDataPartition(A$barrier, p=split, list=FALSE)
+train_di <-A[indsti, ]
+test_di <-A[-indsti, ]
+#load libraries
+library(mlbench)
+library(caret)
+library("Hmisc")
+library(e1071)
+library(klaR)
+# 10-fold cross-validation with 3 repeats
+trcnt <- trainControl(method="repeatedcv", number=10, repeats=3)
+metric <- "Accuracy"
+UNbal.c5.0 <- train(barrier~., data=A, method="C5.0", metric=metric,
+                    preProc=c("BoxCox"), trControl=trcnt, na.action=na.omit)
+confusionMatrix(predict(UNbal.c5.0, test_di), test_di$barrier)
